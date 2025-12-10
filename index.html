@@ -31,6 +31,7 @@
       width: 100%;
       text-align: center;
       margin: 20px 0;
+      font-size: 1.25rem; /* 📱 Bigger, more readable text */
     }
     .buttons {
       display: flex;
@@ -56,9 +57,15 @@
     .hidden {
       display: none !important;
     }
-    .purple-answer {
-  color: #7e57c2;
-}
+     .purple-answer {
+    color: #7e57c2;
+  }
+
+  /* 📱 Larger text for the flashcard content */
+  #card-text {
+    font-size: 1.4rem;
+    line-height: 1.5;
+  }
 
   </style>
 </head>
@@ -265,7 +272,6 @@ function getSettings() {
 }
 document.addEventListener("DOMContentLoaded", () => {
   const settings = getSettings();
-document.getElementById("main-buttons").style.display = "flex";
 
   // Set checkbox in settings modal
   document.getElementById("upload-toggle").checked = settings.enableUpload;
