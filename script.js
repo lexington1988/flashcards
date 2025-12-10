@@ -109,18 +109,22 @@ function fetchCSV(deckName) {
     .then((res) => res.text())
     .then((text) => {
       const rows = text.trim().split("\n").slice(1);
-      return rows.map((row, index) => {
-        const [front, back] = row.split(/,(.+)/);
-        return {
-          id: index,
-          front: front.trim(),
-          back: back.trim(),
-          ef: 2.5,
-          interval: 0,
-          repetitions: 0,
-          due: Date.now(),
-        };
-      });
+     let deck = rows.map((row, index) => {
+  const [front, back] = row.split(/,(.+)/);
+  return {
+    id: index,
+    front: front.trim(),
+    back: back.trim(),
+    ef: 2.5,
+    interval: 0,
+    repetitions: 0,
+    due: Date.now(),
+  };
+});
+
+// 🔀 Shuffle before returning
+return shuffle(deck);
+
     });
 }
 
@@ -178,7 +182,11 @@ function showNextCard() {
       return;
     }
 
-    currentCardIndex = flashcards.indexOf(dueCards[0]);
+       // 🔀 Pick a random due card instead of always the first one
+    const randomIndex = Math.floor(Math.random() * dueCards.length);
+    const randomCard = dueCards[randomIndex];
+    currentCardIndex = flashcards.indexOf(randomCard);
+
   }
 
   showingFront = true;
