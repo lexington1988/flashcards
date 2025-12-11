@@ -141,9 +141,15 @@
     <input type="text" id="rename-deck-input" placeholder="New deck name" />
   </label>
   <br><br>
-  <button onclick="renameDeck()" style="margin-top: 5px;">Rename</button>
+
+  <button onclick="renameDeck()" style="margin-top: 5px; margin-right: 10px;">Rename</button>
+
+  <!-- NEW: Delete Current Card Button -->
+  <button onclick="deleteCurrentCard()" style="margin-top: 5px; background:#e57373;">Delete Card</button>
+
   <br><br>
 </div>
+
 
     <button onclick="applySettings()" style="margin-top: 10px;">Apply</button>
     <button onclick="resetProgress()" style="margin-top: 10px; margin-left: 10px;">Reset Progress</button><br><br>
@@ -164,9 +170,20 @@
 
 </div>
 <div id="home-link" class="hidden"
-     style="margin-top: 20px; font-size: 0.9rem; color: #7e57c2; cursor: pointer; text-align: center;">
+     style="
+       position: fixed;
+       bottom: 10px;
+       left: 0;
+       width: 100%;
+       text-align: center;
+       font-size: 0.9rem;
+       color: #7e57c2;
+       cursor: pointer;
+       opacity: 0.8;
+     ">
   Home
 </div>
+
 
   <div class="buttons hidden" id="rating-buttons">
     <button onclick="rateCard(1)" title="I forgot this — review again soon (same day)">Again</button>
@@ -215,8 +232,10 @@ function showSettings() {
 
   const renameSection = document.getElementById("rename-deck-section");
 
-  // Show rename only if deck is LOCAL
-  if (!currentDeckName.endsWith(".csv")) {
+  // Show rename + delete ONLY if:
+  // - inside a deck
+  // - deck is local
+  if (reviewing && !currentDeckName.endsWith(".csv")) {
     renameSection.classList.remove("hidden");
     document.getElementById("rename-deck-input").value = currentDeckName;
   } else {
@@ -226,6 +245,7 @@ function showSettings() {
   modal.classList.remove("hidden");
   modal.style.display = "flex";
 }
+
 
 
 
