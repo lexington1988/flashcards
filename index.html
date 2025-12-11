@@ -135,6 +135,15 @@
     <label>Custom Study Count: 
       <input type="number" id="custom-count" min="1" max="999" value="0" />
     </label><br><br>
+<!-- Only shown for local decks -->
+<div id="rename-deck-section" class="hidden">
+  <label>Rename Deck:
+    <input type="text" id="rename-deck-input" placeholder="New deck name" />
+  </label>
+  <br><br>
+  <button onclick="renameDeck()" style="margin-top: 5px;">Rename</button>
+  <br><br>
+</div>
 
     <button onclick="applySettings()" style="margin-top: 10px;">Apply</button>
     <button onclick="resetProgress()" style="margin-top: 10px; margin-left: 10px;">Reset Progress</button><br><br>
@@ -153,6 +162,10 @@
 
 </div>
 
+</div>
+<div id="home-link" class="hidden"
+     style="margin-top: 20px; font-size: 0.9rem; color: #7e57c2; cursor: pointer; text-align: center;">
+  Home
 </div>
 
   <div class="buttons hidden" id="rating-buttons">
@@ -198,11 +211,22 @@
     // SETTINGS MODAL LOGIC
 function showSettings() {
   const modal = document.getElementById("settings-modal");
-  if (modal) {
-    modal.classList.remove("hidden");
-    modal.style.display = "flex";
+  if (!modal) return;
+
+  const renameSection = document.getElementById("rename-deck-section");
+
+  // Show rename only if deck is LOCAL
+  if (!currentDeckName.endsWith(".csv")) {
+    renameSection.classList.remove("hidden");
+    document.getElementById("rename-deck-input").value = currentDeckName;
+  } else {
+    renameSection.classList.add("hidden");
   }
+
+  modal.classList.remove("hidden");
+  modal.style.display = "flex";
 }
+
 
 
 function hideSettings() {
@@ -282,8 +306,10 @@ document.addEventListener("DOMContentLoaded", () => {
     fileInput.classList.remove("hidden");
   } else {
     fileInput.classList.add("hidden");
+   
   }
 });
+
 
   </script>
 </body>
