@@ -28,6 +28,24 @@ function shuffle(array) {
   }
   return array;
 }
+function goHome() {
+  reviewing = false;
+
+  // Hide flashcard elements
+  document.getElementById("card").classList.add("hidden");
+  document.getElementById("rating-buttons").classList.add("hidden");
+  document.getElementById("toggle-mode-btn").classList.add("hidden");
+  document.getElementById("add-btn").classList.add("hidden");
+  document.getElementById("edit-btn").classList.add("hidden");
+  document.getElementById("home-link").classList.add("hidden");
+
+  // Show main menu buttons
+  document.getElementById("main-buttons").style.display = "flex";
+
+  // Reset front of the card
+  document.getElementById("card-text").textContent = "Click Start to begin";
+  document.getElementById("flip-hint").style.display = "block";
+}
 
 function startReview() {
   if (!reviewing) {
@@ -46,6 +64,8 @@ function startReview() {
      document.getElementById("main-buttons").style.display = "none";
       cardEl.classList.remove("hidden");
       ratingButtons.classList.remove("hidden");
+      document.getElementById("home-link").classList.remove("hidden");
+
       document.getElementById("add-btn").classList.remove("hidden");
 document.getElementById("edit-btn").classList.remove("hidden");
       const toggleBtn = document.getElementById("toggle-mode-btn");
@@ -88,6 +108,23 @@ function toggleStudyMode() {
   completedToday = new Set();
   delayedCards = [];
   showNextCard();
+}
+async function getDeckSize(deckName) {
+  // Local deck stored in localStorage
+  const localData = localStorage.getItem("deck-" + deckName);
+  if (localData) {
+    const arr = JSON.parse(localData);
+    return arr.length;
+  }
+
+  // GitHub deck – fetch CSV and count rows
+  try {
+    const text = await fetch("https://lexington1988.github.io/flashcards/" + deckName).then(r => r.text());
+    return text.trim().split("\n").slice(1).length; // skip header
+  } catch (err) {
+    console.error("Deck size error:", err);
+    return 0;
+  }
 }
 
 function fetchCSV(deckName) {
@@ -338,7 +375,19 @@ function editCurrentCard() {
   alert("✅ Card updated!");
   showNextCard();
 }
-function exportDeck() {
+async function exportDeck() {
+  // If deck not loaded into memory yet, try to load it first
+  if (!allFlashcards.length) {
+    try {
+      const cards = await fetchCSV(currentDeckName);
+      allFlashcards = cards;
+    } catch (err) {
+      console.error("Error loading deck for export:", err);
+      alert("⚠️ Could not load the deck to export.");
+      return;
+    }
+  }
+
   if (!allFlashcards.length) {
     alert("⚠️ No deck loaded yet.");
     return;
@@ -363,6 +412,7 @@ function exportDeck() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
 function chooseDeck() {
   openDeckSelector();
 }
@@ -381,6 +431,43 @@ function createDeck() {
 
   alert(`🆕 New deck "${trimmedName}" created. Add cards and then export.`);
 }
+function renameDeck() {
+  if (currentDeckName.endsWith(".csv")) {
+    alert("❌ You can only rename LOCAL decks.");
+    return;
+  }
+
+  const newName = document.getElementById("rename-deck-input").value.trim();
+  if (!newName) {
+    alert("⚠️ Enter a valid name.");
+    return;
+  }
+
+  if (newName === currentDeckName) {
+    alert("⚠️ That is already the deck name.");
+    return;
+  }
+
+  const oldKey = "deck-" + currentDeckName;
+  const data = localStorage.getItem(oldKey);
+
+  if (!data) {
+    alert("⚠️ Could not find local deck data to rename.");
+    return;
+  }
+
+  // Save under new key
+  localStorage.setItem("deck-" + newName, data);
+  // Remove old key
+  localStorage.removeItem(oldKey);
+
+  currentDeckName = newName;
+
+  alert(`✅ Deck renamed to "${newName}"`);
+
+  // Update UI
+  hideSettings();
+}
 
 function openDeckSelector() {
   const modal = document.getElementById("deck-modal");
@@ -389,38 +476,80 @@ function openDeckSelector() {
   // Clear existing options
   dropdown.innerHTML = "";
 
-  // GitHub repo directory listing (requires JSON API)
+  // 1️⃣ Add LOCAL decks from localStorage
+  const localDeckNames = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key.startsWith("deck-")) {
+      const deckName = key.substring(5); // remove "deck-"
+      localDeckNames.push(deckName);
+    }
+  }
+
+  localDeckNames.sort();
+
+  if (localDeckNames.length > 0) {
+    localDeckNames.forEach(name => {
+      const option = document.createElement("option");
+      option.value = name;
+
+      // Clean UI label
+     getDeckSize(name).then(size => {
+  option.textContent = `📍 ${name} — ${size} cards`;
+});
+
+
+      // Auto-select if this is the current deck
+      if (name === currentDeckName) option.selected = true;
+
+      dropdown.appendChild(option);
+    });
+
+    // Separator
+    const separator = document.createElement("option");
+    separator.disabled = true;
+    separator.textContent = "──────────";
+    dropdown.appendChild(separator);
+  }
+
+  // 2️⃣ Add GitHub decks
   fetch("https://api.github.com/repos/lexington1988/flashcards/contents")
     .then(res => res.json())
     .then(files => {
-      const csvFiles = files.filter(file => file.name.endsWith(".csv"));
-
-      if (csvFiles.length === 0) {
-        const option = document.createElement("option");
-        option.textContent = "No decks found";
-        option.disabled = true;
-        dropdown.appendChild(option);
-        return;
-      }
+      const csvFiles = Array.isArray(files)
+        ? files.filter(file => file.name.endsWith(".csv"))
+        : [];
 
       csvFiles.forEach(file => {
         const option = document.createElement("option");
         option.value = file.name;
-        option.textContent = file.name;
+
+        // Clean UI label
+       getDeckSize(file.name).then(size => {
+  option.textContent = `🌐 ${file.name} — ${size} cards`;
+});
+
+
+        if (file.name === currentDeckName) option.selected = true;
+
         dropdown.appendChild(option);
       });
     })
     .catch(err => {
-      console.error("Failed to load decks:", err);
-      const option = document.createElement("option");
-      option.textContent = "Error loading decks";
-      option.disabled = true;
-      dropdown.appendChild(option);
+      console.error("Failed to load GitHub decks:", err);
+      if (!dropdown.options.length) {
+        const option = document.createElement("option");
+        option.textContent = "Error loading decks";
+        option.disabled = true;
+        dropdown.appendChild(option);
+      }
     });
 
   modal.classList.remove("hidden");
   modal.style.display = "flex";
 }
+
+
 
 function closeDeckSelector() {
   document.getElementById("deck-modal").classList.add("hidden");
@@ -444,7 +573,19 @@ function deleteDeck() {
     location.reload();
   }
 }
-function makePersistentCopy() {
+async function makePersistentCopy() {
+  // If deck not loaded into memory yet, try to load it first
+  if (!allFlashcards.length) {
+    try {
+      const cards = await fetchCSV(currentDeckName);
+      allFlashcards = cards;
+    } catch (err) {
+      console.error("Error loading deck for persistent copy:", err);
+      alert("⚠️ Could not load the deck to copy.");
+      return;
+    }
+  }
+
   if (!allFlashcards.length) {
     alert("⚠️ No deck loaded yet.");
     return;
@@ -456,4 +597,5 @@ function makePersistentCopy() {
 
   alert(`✅ Persistent copy saved as "${newName}"`);
 }
+document.getElementById("home-link").onclick = goHome;
 
