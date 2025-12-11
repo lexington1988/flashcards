@@ -40,12 +40,18 @@ function goHome() {
   document.getElementById("home-link").classList.add("hidden");
 
   // Show main menu buttons
-  document.getElementById("main-buttons").style.display = "flex";
+  const mainButtons = document.getElementById("main-buttons");
+  mainButtons.style.display = "flex";
 
-  // Reset front of the card
+  // 🔁 Make sure the Start button is visible again
+  const startBtn = document.getElementById("start-btn");
+  startBtn.classList.remove("hidden");
+
+  // Reset front of the card text when user returns home
   document.getElementById("card-text").textContent = "Click Start to begin";
   document.getElementById("flip-hint").style.display = "block";
 }
+
 
 function startReview() {
   if (!reviewing) {
@@ -468,6 +474,46 @@ function renameDeck() {
   // Update UI
   hideSettings();
 }
+function deleteCurrentCard() {
+  // Only allow deleting inside a deck
+  if (!reviewing) {
+    alert("❌ You can only delete cards while reviewing a deck.");
+    return;
+  }
+
+  // Only allow deleting from local decks
+  if (currentDeckName.endsWith(".csv")) {
+    alert("❌ You cannot delete cards from GitHub decks. Make a Persistent Copy first.");
+    return;
+  }
+
+  const card = flashcards[currentCardIndex];
+
+  if (!confirm(`Delete this card?\n\nFront: ${card.front}\n\nThis cannot be undone.`)) {
+    return;
+  }
+
+  // Remove from flashcards + allFlashcards
+  flashcards.splice(currentCardIndex, 1);
+  allFlashcards.splice(allFlashcards.indexOf(card), 1);
+
+  // Reassign IDs
+  allFlashcards.forEach((c, i) => c.id = i);
+
+  // Save updated local deck
+  localStorage.setItem("deck-" + currentDeckName, JSON.stringify(allFlashcards));
+
+  alert("🗑️ Card deleted.");
+
+  // If no cards left
+  if (flashcards.length === 0) {
+    goHome();
+    return;
+  }
+
+  // Show next card safely
+  showNextCard();
+}
 
 function openDeckSelector() {
   const modal = document.getElementById("deck-modal");
@@ -598,4 +644,5 @@ async function makePersistentCopy() {
   alert(`✅ Persistent copy saved as "${newName}"`);
 }
 document.getElementById("home-link").onclick = goHome;
+
 
